@@ -50,8 +50,7 @@ CREATE TABLE lions.case(
   update_user VARCHAR(30),
   pid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   KEY district_idx(district),
-  KEY id_idx(id),
-  KEY cd_idx(id,district)
+  KEY id_idx(id)
 ) ENGINE=MyISAM, CHARACTER SET=latin1, COLLATE=latin1_general_ci
 ;
 
@@ -111,29 +110,27 @@ CREATE TABLE lions.case_prog_cat(
 ;
   
 TRUNCATE TABLE lions.case;
-
-LOAD DATA LOCAL INFILE '/lions/gs_case.txt' 
+LOAD DATA INFILE '/lions/gs_case.txt' 
   INTO TABLE lions.case
   FIELDS TERMINATED BY ''
 ;
 
-LOAD DATA LOCAL INFILE '/lions/gs_dna.txt'
+LOAD DATA INFILE '/lions/gs_dna.txt'
   INTO TABLE lions.dna
   FIELDS TERMINATED BY ''
 ;
 
-LOAD DATA LOCAL INFILE '/lions/gs_case_prog_cat.txt'
+LOAD DATA INFILE '/lions/gs_case_prog_cat.txt'
   INTO TABLE lions.case_prog_cat
   FIELDS TERMINATED BY ''
 ;
 
-LOAD DATA LOCAL INFILE '/lions/gs_case_dom_terr_ind.txt'
+LOAD DATA INFILE '/lions/gs_case_dom_terr_ind.txt'
   INTO TABLE lions.dom_terror
   FIELDS TERMINATED BY ''
 ;
 
 DROP TABLE IF EXISTS lions.participant;
-
 CREATE TABLE lions.participant(
   district VARCHAR(10),
   caseid VARCHAR(10),
@@ -239,7 +236,7 @@ CREATE TABLE participant_count(
 ) ENGINE=MyISAM, CHARACTER SET=latin1, COLLATE=latin1_general_ci
 ;
 
-LOAD DATA LOCAL INFILE '/lions/gs_part_count.txt'
+LOAD DATA INFILE '/lions/gs_part_count.txt'
   INTO TABLE lions.participant_count
   FIELDS TERMINATED BY ''
 ;
@@ -283,7 +280,6 @@ CREATE TABLE IF NOT EXISTS lions.archive_case(
 ;
 
 DROP TABLE IF EXISTS lions.event;
-
 CREATE TABLE lions.event(
   district VARCHAR(10),
   caseid VARCHAR(10),
@@ -314,7 +310,6 @@ CREATE TABLE lions.event(
 ;
 
 DROP TABLE IF EXISTS lions.court_history;
-
 CREATE TABLE lions.court_history(
   district VARCHAR(10),
   caseid VARCHAR(10),
@@ -350,20 +345,9 @@ CREATE TABLE lions.court_history(
 ) ENGINE=MyISAM, CHARACTER SET=latin1, COLLATE=latin1_general_ci
 ;
 
-ALTER TABLE lions.case
-  ADD dt_recvd DATE,
-  ADD dt_close DATE
-;
-
-UPDATE lions.case
-  SET dt_recvd = STR_TO_DATE(recvd_date, '%d-%b-%Y'),
-    dt_close = STR_TO_DATE(close_date, '%d-%b-%Y')
-;
-
 
 TRUNCATE TABLE lions.court_history;
-
-LOAD DATA LOCAL INFILE '/lions/gs_court_hist.txt'
+LOAD DATA INFILE '/lions/gs_court_hist.txt'
   INTO TABLE lions.court_history
   FIELDS TERMINATED BY ''
 ;
@@ -416,7 +400,6 @@ UPDATE lions.court_history_dc
 UPDATE lions.court_history_dc
   SET fy = IF( mo IN ('OCT','NOV','DEC'), yr + 1, yr )
 ;
-
 ALTER TABLE lions.court_history_dc ADD KEY fy_idx(fy)
 ;
 
@@ -429,7 +412,7 @@ CREATE TABLE lions.court_history_tc
   FROM lions.court_history
   WHERE court IN('DC','NC','MG')
 ;
-	
+
 ALTER TABLE lions.court_history_nt
   ADD KEY id_idx(id),
   ADD KEY caseid_idx(caseid),
@@ -478,16 +461,20 @@ ALTER TABLE lions.chc
   ADD KEY first_yr_idx(first_yr)
 ;
 
+SELECT FORMAT(COUNT(*),0) 
+FROM lions.chc INNER JOIN lions.defendants AS d
+  USING(caseid,district)
+WHERE chc.first_fy = '2008'
+;
 
 TRUNCATE TABLE lions.archive_case;
-LOAD DATA LOCAL INFILE '/lions/gs_archive_case.txt'
+LOAD DATA INFILE '/lions/gs_archive_case.txt'
   INTO TABLE lions.archive_case
   FIELDS TERMINATED BY ''
 ;
 
 TRUNCATE TABLE lions.event;
-
-LOAD DATA LOCAL INFILE '/lions/gs_event.txt'
+LOAD DATA INFILE '/lions/gs_event.txt'
   INTO TABLE lions.event
   FIELDS TERMINATED BY ''
 ;
@@ -543,7 +530,7 @@ UPDATE lions.participant_count
 ;
 
 TRUNCATE TABLE lions.participant_court;
-LOAD DATA LOCAL INFILE '/lions/gs_part_court.txt'
+LOAD DATA INFILE '/lions/gs_part_court.txt'
   INTO TABLE lions.participant_court
   FIELDS TERMINATED BY ''
 ;
@@ -615,7 +602,7 @@ CREATE TABLE IF NOT EXISTS lions.assignment(
 ;
 
 TRUNCATE TABLE lions.assignment;
-LOAD DATA LOCAL INFILE '/lions/gs_assignment.txt'
+LOAD DATA INFILE '/lions/gs_assignment.txt'
   INTO TABLE lions.assignment
   FIELDS TERMINATED BY ''
 ;
@@ -695,7 +682,7 @@ CREATE TABLE IF NOT EXISTS lions.staff(
 
 TRUNCATE TABLE lions.staff
 ;
-LOAD DATA LOCAL INFILE '/lions/gs_staff.txt'
+LOAD DATA INFILE '/lions/gs_staff.txt'
   INTO TABLE lions.staff
   FIELDS TERMINATED BY ''
 ;
@@ -712,19 +699,16 @@ ALTER TABLE lions.districts
 
 TRUNCATE TABLE lions.participant;
 ALTER TABLE lions.participant DISABLE KEYS;
-LOAD DATA LOCAL INFILE '/lions/participant.txt'
+LOAD DATA INFILE '/lions/participant.txt'
   INTO TABLE lions.participant
   FIELDS TERMINATED BY ''
 ;
 ALTER TABLE lions.participant ENABLE KEYS;
 
-DROP TABLE IF EXISTS lions.defendants
-;
-
-CREATE TABLE IF NOT EXISTS lions.defendants
+CREATE TABLE lions.defendants
   SELECT *
   FROM lions.participant
-  WHERE role IN('D','DG','DP','DJ')
+  WHERE role ='D'
 ;
 ALTER TABLE lions.defendants
   ADD KEY id_idx(id),
@@ -733,8 +717,7 @@ ALTER TABLE lions.defendants
   ADD KEY cdp_idx(caseid,district,id),
   ADD def_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   ADD KEY typ_idx(typ),
-  ADD KEY role_idx(role),
-  ADD KEY cd_idx(caseid,district)
+  ADD KEY role_idx(role)
 ;
 
 DROP TABLE IF EXISTS lions.sentence;
@@ -778,14 +761,12 @@ CREATE TABLE IF NOT EXISTS lions.sentence(
   KEY district_idx(district),
   KEY caseid_idx(caseid),
   KEY partid_idx(partid),
-  KEY cd_idx(caseid,district),
-  KEY cdp_idx(caseid,district,partid),
   pid INT NOT NULL AUTO_INCREMENT PRIMARY KEY
 ) ENGINE=MyISAM, CHARACTER SET=latin1, COLLATE=latin1_general_ci
 ;
 
 TRUNCATE TABLE lions.sentence;
-LOAD DATA LOCAL INFILE '/lions/gs_sentence.txt'
+LOAD DATA INFILE '/lions/gs_sentence.txt'
   INTO TABLE lions.sentence
   FIELDS TERMINATED BY ''
 ;
@@ -816,7 +797,7 @@ CREATE TABLE lions.inst(
 ;  
 
 TRUNCATE TABLE lions.inst;
-LOAD DATA LOCAL INFILE '/lions/gs_instrument.txt'
+LOAD DATA INFILE '/lions/gs_instrument.txt'
   INTO TABLE lions.inst
   FIELDS TERMINATED BY ''
 ;
@@ -880,80 +861,114 @@ INSERT INTO lions.case_summary(caseid, district, first_yr)
 ;
 
 # ADVERSE DISTRICT COURT HISTORY
-UPDATE lions.case_summary AS cs,
-  ( SELECT caseid, district, 
-      COUNT(*) AS c
-    FROM lions.court_history_dc
-    WHERE disposition IN('DJ') OR 
-       ( disposition_reason1 IN('MISD','MISM','STRD','STRM') 
-            OR disposition_reason2 IN('MISD','MISM','STRD','STRM') 
-            OR disposition_reason3 IN('MISD','MISM','STRD','STRM') 
-       )
-	 GROUP BY caseid, district
-  ) AS t
-  SET cs.adverse_dct = t.c
-  WHERE cs.caseid = t.caseid
-    AND cs.district = t.district
+UPDATE lions.case_summary AS cs
+  SET adverse_dct = (
+      SELECT COUNT(*)
+      FROM lions.court_history_dc AS c
+      WHERE c.district = cs.district
+        AND c.caseid = cs.caseid
+        AND ( c.disposition IN('DJ') OR 
+          ( c.disposition_reason1 IN('MISD','MISM','STRD','STRM') 
+            OR c.disposition_reason2 IN('MISD','MISM','STRD','STRM') 
+            OR c.disposition_reason3 IN('MISD','MISM','STRD','STRM') 
+          )
+        )
+    )
 ;
 
 # BASIC CASE INFORMATION
-UPDATE lions.case_summary AS cs, lions.case AS c
-  SET cs.lead_charge = c.lead_charge,
-    cs.date_received = c.recvd_date,
-	cs.status = c.status,
-	cs.offense_range = CONCAT(c.offense_from,' - ', c.offense_to)
-  WHERE cs.caseid = c.id
-    AND cs.district = c.district
+UPDATE lions.case_summary AS cs
+  SET lead_charge = ( 
+      SELECT lead_charge
+      FROM lions.case AS c
+      WHERE c.id = cs.caseid
+        AND c.district = cs.district
+    ),
+    date_received = (
+      SELECT recvd_date
+      FROM lions.case AS c
+      WHERE c.id = cs.caseid
+        AND c.district = cs.district
+    ),
+    status = (
+      SELECT status
+      FROM lions.case AS c
+      WHERE c.id = cs.caseid
+        AND c.district = cs.district
+    ),
+    offense_range = (
+      SELECT CONCAT(offense_from,' - ', offense_to)
+      FROM lions.case AS c
+      WHERE c.id = cs.caseid
+        AND c.district = cs.district    
+    )
 ;
 
 # ADVERSE APPELLATE FINDINGS
-UPDATE lions.case_summary AS cs,
-  ( SELECT caseid, district, 
-      SUM(IF(court = 'CA' AND disposition = 'NF', 1, 0)) AS adverse_cta,
-	  SUM(IF(court = 'CA' AND disposition = 'NF' AND us_role = 'AE' AND disposition_reason1 IN('AFRR','AFRV','AFVR','RARM','RDAP','RDRR','REVA','VACA','VARM'), 1, 0)) AS adverse_cta_worst
-	FROM lions.court_history
-	GROUP BY caseid, district
-  ) AS t
-  SET cs.adverse_cta = t.adverse_cta,
-    cs.adverse_cta_worst = t.adverse_cta_worst
-  WHERE cs.caseid = t.caseid
-    AND cs.district = t.district
+UPDATE lions.case_summary AS cs
+  SET adverse_cta = (
+      SELECT COUNT(*)
+      FROM lions.court_history AS c
+        WHERE cs.caseid = c.caseid
+          AND cs.district = c.district
+          AND c.court = 'CA'
+          AND c.disposition = 'NF'
+    )
 ;
 
-UPDATE lions.case_summary AS cs, 
-  ( SELECT caseid, district,
-      SUM(IF(typ = 'NWTR', 1, 0)) AS adverse_new_trial,
-	  SUM(IF(typ = 'MIST', 1, 0)) AS adverse_mistrial
-	FROM lions.event_adverse
-	GROUP BY caseid, district
-  ) AS t
-  SET cs.adverse_new_trial = t.adverse_new_trial,
-    cs.adverse_mistrial = t.adverse_mistrial
-  WHERE cs.caseid = t.caseid
-    AND cs.district = t.district
+# ADVERSE APPELLATE FINDINGS
+UPDATE lions.case_summary AS cs
+  SET adverse_cta_worst = (
+      SELECT COUNT(*)
+      FROM lions.court_history AS c
+        WHERE cs.caseid = c.caseid
+          AND cs.district = c.district
+          AND c.court = 'CA'
+          AND c.disposition = 'NF'
+          AND c.us_role = 'AE'
+          AND c.disposition_reason1 IN('AFRR','AFRV','AFVR','RARM','RDAP','RDRR','REVA','VACA','VARM')
+    )
 ;
 
+# ADVERSE NEW TRIAL
+UPDATE lions.case_summary AS cs
+  SET adverse_new_trial = (
+      SELECT COUNT(*)
+      FROM lions.event_adverse AS e 
+      WHERE cs.district = e.district
+        AND cs.caseid = e.caseid 
+        AND e.typ = 'NWTR'
+    )
+;
+
+# ADVERSE MISTRIAL
+UPDATE lions.case_summary AS cs
+  SET adverse_mistrial = (
+      SELECT COUNT(*)
+      FROM lions.event_adverse AS e 
+      WHERE cs.district = e.district
+        AND cs.caseid = e.caseid 
+        AND e.typ = 'MIST'
+    )
+;
 # DEFENDANTS
-UPDATE lions.case_summary AS cs,
-  ( SELECT caseid, district, COUNT(*) AS c
-    FROM lions.defendants
-	GROUP BY caseid, district
-  ) AS t
-  SET cs.defendants = t.c
-  WHERE cs.caseid = t.caseid
-    AND cs.district = t.district
+UPDATE lions.case_summary AS cs
+  SET defendants = (
+      SELECT COUNT(*) 
+      FROM lions.defendants AS d
+      WHERE cs.caseid = d.caseid
+        AND cs.district = d.district
+    )
 ;
 
 # AUSAs
-UPDATE lions.case_summary AS cs,
-  ( SELECT caseid, district,
-      COUNT(*) AS prosecutors
-	FROM lions.assignment_distinct
-	GROUP BY caseid, district
-  ) AS t
-  SET cs.prosecutors = t.prosecutors
-  WHERE cs.caseid = t.caseid
-    AND cs.district = t.district
+UPDATE lions.case_summary AS cs
+  SET prosecutors = (
+    SELECT COUNT(*) 
+    FROM lions.assignment_distinct AS a
+    WHERE cs.caseid = a.caseid
+      AND cs.district = a.district
+  )
 ;
 
 # CONVICTION RECORDS
@@ -1007,25 +1022,16 @@ UPDATE lions.case_summary AS cs
 
 # SUMMARIZE
 UPDATE lions.case_summary
-  SET adverse = IFNULL(adverse_dct,0)
-      + IFNULL(adverse_cta, 0)
-      + IFNULL(adverse_new_trial,0)
-      + IFNULL(adverse_mistrial,0)
+  SET adverse = adverse_dct  
+      + adverse_cta
+      + adverse_new_trial
+      + adverse_mistrial
 ;
 
 ALTER TABLE lions.case_summary
   ADD KEY adverse_new_trial_idx(adverse_new_trial),
   ADD KEY adverse_mistrial_idx(adverse_mistrial)
 ;
-
-ALTER TABLE lions.case_summary
-  ADD dt_filed DATE
-;
-
-UPDATE lions.case_summary
-  SET dt_filed = STR_TO_DATE(filing_date, '%d-%b-%Y')
-;
-
 
 # CROSSTAB
 DROP TABLE IF EXISTS lions.big_crosstab;
@@ -1039,17 +1045,13 @@ CREATE TABLE lions.big_crosstab
       WHEN '015' THEN 'State Corruption'
       WHEN '016' THEN 'Local Corruption'
       WHEN '017' THEN 'Other Public Corruption'
-	  WHEN '020' THEN 'Organized Crime'
       WHEN '021' THEN 'Organized Crime - Emerging Organizations'
-	  WHEN '023' THEN 'Organized Crime - Top International Organizations'
-	  WHEN '024' THEN 'Transnational Organized Crime'
       WHEN '031' THEN 'Federal Procurement Fraud'
       WHEN '032' THEN 'Federal Program Fraud'
 	  WHEN '03Z' THEN 'Other Fraud'
       WHEN '033' THEN 'Tax Fraud'
       WHEN '036' THEN 'Financial Institution Fraud'
       WHEN '037' THEN 'Bankruptcy Fraud'
-	  WHEN '038' THEN 'Advance Fee Schemes'
       WHEN '03A' THEN 'Consumer Fraud'
       WHEN '03B' THEN 'Securities Fraud'
       WHEN '03C' THEN 'Commodities Fraud'
@@ -1067,16 +1069,11 @@ CREATE TABLE lions.big_crosstab
       WHEN '040' THEN 'Drug Trafficking'
       WHEN '045' THEN 'Drug Possession'
       WHEN '047' THEN 'OCDETF'
-      WHEN '05D' THEN 'Civil Rights - Law Enforcement'
-	  WHEN '05E' THEN 'Civil Rights - Slavery'
-	  WHEN '05F' THEN 'Civil Rights - Racial Violence, Including Hate Crimes'
-	  WHEN '05G' THEN 'Civil Rights - Access To Clinics'
+      WHEN '05F' THEN 'Civil Rights - Racial Violence, Including Hate Crimes'
       WHEN '05H' THEN 'Civil Rights - Hate Crimes Arising out of Terrorist Attacks on U.S.'
-	  WHEN '050' THEN 'Civil Rights - Other'
       WHEN '055' THEN 'Violations and the Immigration and Nationality Act'
       WHEN '061' THEN 'Counterfeiting and Forgery'
-      WHEN '063' THEN 'Customs Violation - Currency'
-	  WHEN '064' THEN 'Energy Pricing and Related Fraud'
+      WHEN '064' THEN 'Energy Pricing and Related Fraud'
       WHEN '066' THEN 'Health and Safety Violations - Employers'
       WHEN '06A' THEN 'Trafficking in Contraband Cigarettes'
       WHEN '06B' THEN 'Wildlife Protection'
@@ -1112,8 +1109,7 @@ CREATE TABLE lions.big_crosstab
       WHEN '039' THEN 'Other Fraud Agaisnt Businesses'
       WHEN '090' THEN 'Other Criminal Prosecutions'
       WHEN '06F' THEN 'Money Laundering Structuring / Narcotics'      
-      WHEN '091' THEN 'Domestic Violence'
-	  WHEN '093' THEN 'All Other Violent Crimes'
+      WHEN '093' THEN 'All Other Violent Crimes'
       ELSE NULL 
     END AS description,
   SUM(IF(c.first_yr = '1996', 1, 0)) AS c1996,     
@@ -1135,10 +1131,6 @@ CREATE TABLE lions.big_crosstab
   SUM(IF(c.first_yr = '2012', 1, 0)) AS c2012,
   SUM(IF(c.first_yr = '2013', 1, 0)) AS c2013,
   SUM(IF(c.first_yr = '2014', 1, 0)) AS c2014,
-  SUM(IF(c.first_yr = '2015', 1, 0)) AS c2015,
-  SUM(IF(c.first_yr = '2016', 1, 0)) AS c2016,
-  SUM(IF(c.first_yr = '2017', 1, 0)) AS c2017,
-  SUM(IF(c.first_yr = '2018', 1, 0)) AS c2018,
   COUNT(*) AS total_cases
   FROM lions.chc AS c INNER JOIN lions.case_prog_cat AS p
     USING(caseid, district)
@@ -1262,7 +1254,7 @@ CREATE TABLE IF NOT EXISTS lions.controlled_sub(
 ) ENGINE=MyISAM, CHARACTER SET=latin1, COLLATE=latin1_general_ci
 ;
 
-LOAD DATA LOCAL INFILE '/lions/gs_control_sub.txt'
+LOAD DATA INFILE '/lions/gs_control_sub.txt'
   INTO TABLE lions.controlled_sub
   FIELDS TERMINATED BY ''
 ;
@@ -1827,7 +1819,7 @@ CREATE TABLE lions.gs_agent (
 ) ENGINE=MyISAM, CHARACTER SET=latin1, COLLATE=latin1_general_ci
 ;
 
-LOAD DATA LOCAL INFILE '/lions/gs_agent.txt'
+LOAD DATA INFILE '/lions/gs_agent.txt'
   INTO TABLE lions.gs_agent
   FIELDS TERMINATED BY ''
 ;
@@ -1868,21 +1860,9 @@ CREATE TABLE lions.expert_case(
 ) ENGINE=MyISAM, CHARACTER SET=latin1, COLLATE=latin1_general_ci
 ;
 
-LOAD DATA LOCAL INFILE '/lions/gs_expert_case.txt'
+LOAD DATA INFILE '/lions/gs_expert_case.txt'
   INTO TABLE lions.expert_case
   FIELDS TERMINATED BY ''
-;
-
-DROP TABLE IF EXISTS lions.investigating_agency;
-
-CREATE TABLE IF NOT EXISTS lions.investigating_agency
-  LIKE lions.participant
-;
-
-INSERT INTO lions.investigating_agency
-  SELECT *
-  FROM lions.participant
-  WHERE role = 'IN'
 ;
 
 
